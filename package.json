@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/webvariants/susi-events-nodejs/issues"
   },
-  "homepage": "https://github.com/webvariants/susi-events-nodejs#readme"
+  "homepage": "https://github.com/webvariants/susi-events-nodejs#readme",
+  "dependencies": {
+    "promise": "^7.0.4"
+  }
 }

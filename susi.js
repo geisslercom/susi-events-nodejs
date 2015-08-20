@@ -1,4 +1,5 @@
 var crypto = require('crypto');
+var Promise = require('promise');
 
 function Susi(){
     var _finishCallbacks = {};
@@ -16,7 +17,7 @@ function Susi(){
 
     var self = this;
 
-    self.publish = function(evt,finishCallback){
+    self.publish = function(evt){
         if(!typeof evt.topic === 'string'){
             return false;
         }
@@ -30,8 +31,7 @@ function Susi(){
         var publishProcess = {
             next: 0,
             processors: [],
-            consumers: [],
-            finishCallback: finishCallback
+            consumers: []
         }, i;
         for(i=0;i<_processors.length;i++){
             if(evt.topic.match(_processors[i].topic)){
@@ -44,14 +44,20 @@ function Susi(){
             }
         }
         _publishProcesses[evt.id] = publishProcess;
-        self.ack(evt);
-        return true;
+        
+       return new Promise(function (resolve , reject) {
+            if (self.ack(evt)) {
+                resolve(evt);
+            }else{
+                reject(evt, "There is a Problem with processing");
+            }
+        });
     };
 
     self.ack = function(evt){
         var publishProcess = _publishProcesses[evt.id];
         if(!publishProcess){
-            return;
+            return false;
         }
         var next = publishProcess.next;
         var processors = publishProcess.processors;
@@ -62,11 +68,9 @@ function Susi(){
             for(var i=0;i<publishProcess.consumers.length;i++){
                 publishProcess.consumers[i](evt);
             }
-            if(typeof publishProcess.finishCallback === 'function'){
-                publishProcess.finishCallback(evt);
-            }
             delete _publishProcesses[evt.id];
         }
+        return true;
     };
 
     self.dismiss = function(evt){

@@ -19,28 +19,28 @@ var consumerId = susi.registerConsumer('foo', function(evt) {
     console.log('consumer', JSON.stringify(evt.payload));
 });
 
-// publish 'foo'
-susi.publish({
-    topic: 'foo'
-}, function(evt) {
-    console.log('finish', JSON.stringify(evt.payload));
-    console.log('-----------------------------------');
-
-    // unregister processor 'foo'
-    susi.unregisterProcessor(processorId);
-    susi.publish({
-        topic: 'foo'
-    }, function(evt) {
+/**
+ * Example  for publishing with promise
+ * @param {json} processor/cusomer information
+ */
+susi.publish({topic : 'foo'})
+    .then(function(evt){
         console.log('finish', JSON.stringify(evt.payload));
         console.log('-----------------------------------');
-
-        // unregister consumer 'foo'
-        susi.unregisterConsumer(consumerId);
-        susi.publish({
-            topic: 'foo'
-        }, function(evt) {
-            console.log('finish', JSON.stringify(evt.payload));
-            console.log('-----------------------------------');
-        });
+        susi.unregisterProcessor(processorId);
+    })
+    .catch(function (evt , err) {
+        console.log('err');
+        console.error(err);
     });
+
+susi.publish({topic : 'foo'}).then(function(evt){
+    console.log('finish', JSON.stringify(evt.payload));
+    console.log('-----------------------------------');
+    susi.unregisterConsumer(consumerId);
+});
+
+susi.publish({topic : 'foo'}).then(function(evt){
+    console.log('---------------Done----------------');
+     susi.unregisterConsumer(consumerId);
 });
