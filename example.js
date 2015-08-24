@@ -7,7 +7,6 @@ susi.registerProcessor('.*', function(evt) {
     evt.payload = evt.payload || {};
     evt.ack();
 });
-
 // add 'foo' processor
 var processorId = susi.registerProcessor('foo', function(evt) {
     evt.payload.foo = 'bar';
