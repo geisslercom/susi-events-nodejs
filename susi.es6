@@ -10,41 +10,41 @@ export default class Susi{
         this.processorTopicCounter = {};
 
         this.publishProcesses = {};
+        this.publishPromise;
     }
     
     generateId() {
         return crypto.randomBytes(16).toString('hex');
     }
 
-    publish(evt,finishCallback){
-        let publishProcess = {
-            next: 0,
-            processors: [],
-            consumers: [],
-            finishCallback
-        };
-        if(!typeof evt.topic === 'string') return false;
-        let self = this;
+    publish(evt){
+        this.publishPromise = new Promise((resolve, reject) => {
+            let publishProcess = {
+                next: 0,
+                processors: [],
+                consumers: [],
+                resolve
+            };
+            if(!typeof evt.topic === 'string') return false;
+            let self = this;
 
-        evt.id = evt.id || this.generateId();
-        evt.ack = function() {
-            self.ack(evt);
-        };
-        evt.dismiss = function() {
-            self.dismiss(evt);
-        };
-        for(let p of this.processors){
-            if(evt.topic.match(p.topic)) publishProcess.processors.push(p.callback);
-        }
-        for(let c of this.consumers){
-            if(evt.topic.match(c.topic)) publishProcess.consumers.push(c.callback);
-        }
-        this.publishProcesses[evt.id] = publishProcess;
-        var proceed = this.ack(evt);
-        let p = new Promise((resolve, reject) => {
-            if (proceed) resolve(evt);
+            evt.id = evt.id || this.generateId();
+            evt.ack = function() {
+                self.ack(evt);
+            };
+            evt.dismiss = function() {
+                self.dismiss(evt);
+            };
+            for(let p of this.processors){
+                if(evt.topic.match(p.topic)) publishProcess.processors.push(p.callback);
+            }
+            for(let c of this.consumers){
+                if(evt.topic.match(c.topic)) publishProcess.consumers.push(c.callback);
+            }
+            this.publishProcesses[evt.id] = publishProcess;
+            this.ack(evt);         
         })
-        return p;
+        return this.publishPromise;
     }
     
     ack(evt){
@@ -57,14 +57,12 @@ export default class Susi{
         if(next < processors.length){
             publishProcess.next++;
             processors[next](evt);
-            return false
         }else{
             for(let ppConsumer of publishProcess.consumers) ppConsumer(evt);
-            
-            if(typeof publishProcess.finishCallback === 'function') publishProcess.finishCallback(evt);
+
+            publishProcess.resolve(evt);
             
             delete this.publishProcesses[evt.id];
-            return true
         }
     };
 
