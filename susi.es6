@@ -23,9 +23,9 @@ export default class Susi{
             consumers: [],
             finishCallback
         };
-
         if(!typeof evt.topic === 'string') return false;
         let self = this;
+
         evt.id = evt.id || this.generateId();
         evt.ack = function() {
             self.ack(evt);
@@ -40,27 +40,31 @@ export default class Susi{
             if(evt.topic.match(c.topic)) publishProcess.consumers.push(c.callback);
         }
         this.publishProcesses[evt.id] = publishProcess;
-        this.ack(evt);
-        return true;
+        var proceed = this.ack(evt);
+        let p = new Promise((resolve, reject) => {
+            if (proceed) resolve(evt);
+        })
+        return p;
     }
     
     ack(evt){
         let publishProcess = this.publishProcesses[evt.id];
-        
         if(!publishProcess) return;
         
         let next = publishProcess.next;
         let processors = publishProcess.processors;
-        
+
         if(next < processors.length){
             publishProcess.next++;
             processors[next](evt);
+            return false
         }else{
             for(let ppConsumer of publishProcess.consumers) ppConsumer(evt);
             
             if(typeof publishProcess.finishCallback === 'function') publishProcess.finishCallback(evt);
             
             delete this.publishProcesses[evt.id];
+            return true
         }
     };
 
@@ -96,8 +100,8 @@ export default class Susi{
 
     unregisterConsumer(id){
         let i = 0;
-        for(let consumer of this.consumers){
-            if(consumer.id == id){
+        for(let c of this.consumers){
+            if(c.id == id){
                 this.consumers.splice(i,1);
                 break;
             }
@@ -107,8 +111,8 @@ export default class Susi{
 
     unregisterProcessor(id){
         let i = 0;
-        for(let processor of this.processors){
-            if(processor.id == id){
+        for(let p of this.processors){
+            if(p.id == id){
                 this.processors.splice(i,1);
                 break;
             }

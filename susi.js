@@ -38,9 +38,9 @@ var Susi = (function () {
                 consumers: [],
                 finishCallback: finishCallback
             };
-
             if (! typeof evt.topic === 'string') return false;
             var self = this;
+
             evt.id = evt.id || this.generateId();
             evt.ack = function () {
                 self.ack(evt);
@@ -54,9 +54,9 @@ var Susi = (function () {
 
             try {
                 for (var _iterator = this.processors[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                    var p = _step.value;
+                    var _p = _step.value;
 
-                    if (evt.topic.match(p.topic)) publishProcess.processors.push(p.callback);
+                    if (evt.topic.match(_p.topic)) publishProcess.processors.push(_p.callback);
                 }
             } catch (err) {
                 _didIteratorError = true;
@@ -99,14 +99,16 @@ var Susi = (function () {
             }
 
             this.publishProcesses[evt.id] = publishProcess;
-            this.ack(evt);
-            return true;
+            var proceed = this.ack(evt);
+            var p = new Promise(function (resolve, reject) {
+                if (proceed) resolve(evt);
+            });
+            return p;
         }
     }, {
         key: 'ack',
         value: function ack(evt) {
             var publishProcess = this.publishProcesses[evt.id];
-
             if (!publishProcess) return;
 
             var next = publishProcess.next;
@@ -115,6 +117,7 @@ var Susi = (function () {
             if (next < processors.length) {
                 publishProcess.next++;
                 processors[next](evt);
+                return false;
             } else {
                 var _iteratorNormalCompletion3 = true;
                 var _didIteratorError3 = false;
@@ -143,6 +146,7 @@ var Susi = (function () {
                 if (typeof publishProcess.finishCallback === 'function') publishProcess.finishCallback(evt);
 
                 delete this.publishProcesses[evt.id];
+                return true;
             }
         }
     }, {
@@ -210,9 +214,9 @@ var Susi = (function () {
 
             try {
                 for (var _iterator5 = this.consumers[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-                    var consumer = _step5.value;
+                    var c = _step5.value;
 
-                    if (consumer.id == id) {
+                    if (c.id == id) {
                         this.consumers.splice(i, 1);
                         break;
                     }
@@ -243,9 +247,9 @@ var Susi = (function () {
 
             try {
                 for (var _iterator6 = this.processors[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
-                    var processor = _step6.value;
+                    var p = _step6.value;
 
-                    if (processor.id == id) {
+                    if (p.id == id) {
                         this.processors.splice(i, 1);
                         break;
                     }
