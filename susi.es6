@@ -18,7 +18,7 @@ export default class Susi{
     }
 
     publish(evt){
-        this.publishPromise = new Promise((resolve, reject) => {
+        var publishPromise = new Promise((resolve, reject) => {
             let publishProcess = {
                 next: 0,
                 processors: [],
@@ -44,7 +44,7 @@ export default class Susi{
             this.publishProcesses[evt.id] = publishProcess;
             this.ack(evt);         
         })
-        return this.publishPromise;
+        return publishPromise;
     }
     
     ack(evt){
